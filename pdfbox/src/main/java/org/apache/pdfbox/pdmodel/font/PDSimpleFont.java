@@ -332,15 +332,15 @@ public abstract class PDSimpleFont extends PDFont
     protected void writeFont(final Graphics2D g2d, final AffineTransform at, 
             final float x, final float y, final GlyphVector glyphs) 
     {
-        // check if we have a rotation
-        if (!at.isIdentity()) 
-        {
-            for (int i = 0; i < glyphs.getNumGlyphs(); i++)
-            {
-                glyphs.setGlyphTransform(i, at);
-            }
-        }
-        g2d.drawGlyphVector(glyphs, x, y);
+        AffineTransform oldTx = g2d.getTransform();
+
+        AffineTransform glyphTransform = new AffineTransform(oldTx);
+        glyphTransform.translate(x, y);
+        glyphTransform.concatenate(at);
+
+        g2d.setTransform(glyphTransform);
+        g2d.drawGlyphVector(glyphs, 0, 0);
+        g2d.setTransform(oldTx);
     }
 
     /**
