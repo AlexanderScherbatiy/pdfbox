@@ -588,4 +588,43 @@ public class PDType0Font extends PDFont implements PDVectorFont
     {
         return descendantFont.hasGlyph(code);
     }
+
+    private java.awt.Font awtFont;
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public java.awt.Font getAwtFont() throws IOException
+    {
+        if (awtFont == null)
+        {
+            if (descendantFont != null)
+            {
+                awtFont = descendantFont.getAwtFont();
+                if (awtFont != null)
+                {
+//                    setIsFontSubstituted(((PDSimpleFont) descendantFont).isFontSubstituted());
+                    /*
+                     * Fix Oracle JVM Crashes.
+                     * Tested with Oracle JRE 6.0_45-b06 and 7.0_21-b11
+                     */
+                    awtFont.canDisplay(1);
+                }
+            }
+            if (awtFont == null)
+            {
+                awtFont = FontManager.getStandardFont();
+                LOG.info("Using font " + awtFont.getName()
+                        + " instead of " + descendantFont.getFontDescriptor().getFontName());
+//                setIsFontSubstituted(true);
+            }
+        }
+        return awtFont;
+    }
+
+    @Override
+    public float getAwtFontDefaultSize() {
+        return 10;
+    }
 }

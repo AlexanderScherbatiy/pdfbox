@@ -682,4 +682,72 @@ public class PDType1Font extends PDSimpleFont
     {
         return isDamaged;
     }
+
+
+    private static final Log log = LogFactory.getLog(PDType1Font.class);
+    private java.awt.Font awtFont = null;
+
+    /**
+     * {@inheritDoc}
+     */
+    public java.awt.Font getAwtFont() throws IOException
+    {
+        if( awtFont == null )
+        {
+
+            // Check type1font.getAwtFont()
+
+            String baseFont = getBaseFont();
+            PDFontDescriptor fd = getFontDescriptor();
+            if (fd != null)
+            {
+                if( fd.getFontFile() != null )
+                {
+                    try
+                    {
+                        // create a type1 font with the embedded data
+                        awtFont = java.awt.Font.createFont(java.awt.Font.TYPE1_FONT, fd.getFontFile().createInputStream() );
+                    }
+                    catch (java.awt.FontFormatException e)
+                    {
+                        log.info("Can't read the embedded type1 font " + fd.getFontName() );
+                    }
+                }
+                if (awtFont == null)
+                {
+                    // check if the font is part of our environment
+                    if (fd.getFontName() != null)
+                    {
+                        awtFont = FontManager.getAwtFont(fd.getFontName());
+                    }
+                    if (awtFont == null)
+                    {
+                        log.info("Can't find the specified font " + fd.getFontName() );
+                    }
+                }
+            }
+            else
+            {
+                // check if the font is part of our environment
+                awtFont = FontManager.getAwtFont(baseFont);
+                if (awtFont == null)
+                {
+                    log.info("Can't find the specified basefont " + baseFont );
+                }
+            }
+
+            if (awtFont == null)
+            {
+                // we can't find anything, so we have to use the standard font
+                awtFont = FontManager.getStandardFont();
+                log.info("Using font "+awtFont.getName()+ " instead");
+            }
+        }
+        return awtFont;
+    }
+
+    @Override
+    public float getAwtFontDefaultSize() {
+        return 20f;
+    }
 }

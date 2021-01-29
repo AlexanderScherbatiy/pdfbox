@@ -167,6 +167,9 @@ public class PageDrawer extends PDFGraphicsStreamEngine
 
     static final int JAVA_VERSION = PageDrawer.getJavaVersion();
 
+    private static final boolean RENDERING_DRAW_STRING =
+            Boolean.getBoolean("org.apache.pdfbox.rendering.DrawString");
+
     /**
     * Default annotations filter, returns all annotations
     */
@@ -465,8 +468,12 @@ public class PageDrawer extends PDFGraphicsStreamEngine
         AffineTransform at = textRenderingMatrix.createAffineTransform();
         at.concatenate(font.getFontMatrix().createAffineTransform());
 
-        Glyph2D glyph2D = createGlyph2D(font);
-        drawGlyph2D(glyph2D, font, code, displacement, at);
+        if (RENDERING_DRAW_STRING) {
+            drawString(font, code, at, displacement);
+        } else {
+            Glyph2D glyph2D = createGlyph2D(font);
+            drawGlyph2D(glyph2D, font, code, displacement, at);
+        }
     }
 
     /**
@@ -488,19 +495,7 @@ public class PageDrawer extends PDFGraphicsStreamEngine
         GeneralPath path = glyph2D.getPathForCharacterCode(code);
         if (path != null)
         {
-            // Stretch non-embedded glyph if it does not match the height/width contained in the PDF.
-            // Vertical fonts have zero X displacement, so the following code scales to 0 if we don't skip it.
-            // TODO: How should vertical fonts be handled?
-            if (!font.isEmbedded() && !font.isVertical() && !font.isStandard14() && font.hasExplicitWidth(code))
-            {
-                float fontWidth = font.getWidthFromFont(code);
-                if (fontWidth > 0 && // ignore spaces
-                        Math.abs(fontWidth - displacement.getX() * 1000) > 0.0001)
-                {
-                    float pdfWidth = displacement.getX() * 1000;
-                    at.scale(pdfWidth / fontWidth, 1);
-                }
-            }
+            stretchNonEmbeddedFont(at, font, code, displacement);
 
             // render glyph
             Shape glyph = at.createTransformedShape(path);
@@ -531,6 +526,48 @@ public class PageDrawer extends PDFGraphicsStreamEngine
             if (renderingMode.isClip())
             {
                 textClippings.add(glyph);
+            }
+        }
+    }
+
+    private void drawString(PDFont font, int code, AffineTransform at, Vector displacement) throws IOException
+    {
+        AffineTransform prevTx = graphics.getTransform();
+        stretchNonEmbeddedFont(at, font, code, displacement);
+        // Probably relates to DEFAULT_FONT_MATRIX transform from PDFont
+        at.scale(100, -100);
+        graphics.transform(at);
+
+        graphics.setComposite(getGraphicsState().getNonStrokingJavaComposite());
+        graphics.setPaint(getNonStrokingPaint());
+        setClip();
+
+        java.awt.Font prevFont = graphics.getFont();
+        java.awt.Font awtFont = font.getAwtFont();
+        // It is not clear where to get the default font size from
+        awtFont = awtFont.deriveFont(font.getAwtFontDefaultSize());
+        graphics.setFont(awtFont);
+
+        graphics.drawString(font.toUnicode(code), 0, 0);
+
+        graphics.setFont(prevFont);
+        graphics.setTransform(prevTx);
+    }
+
+    private void stretchNonEmbeddedFont(AffineTransform at, PDFont font, int code,
+                                        Vector displacement) throws IOException
+    {
+        // Stretch non-embedded glyph if it does not match the height/width contained in the PDF.
+        // Vertical fonts have zero X displacement, so the following code scales to 0 if we don't skip it.
+        // TODO: How should vertical fonts be handled?
+        if (!font.isEmbedded() && !font.isVertical() && !font.isStandard14() && font.hasExplicitWidth(code))
+        {
+            float fontWidth = font.getWidthFromFont(code);
+            if (fontWidth > 0 && // ignore spaces
+                    Math.abs(fontWidth - displacement.getX() * 1000) > 0.0001)
+            {
+                float pdfWidth = displacement.getX() * 1000;
+                at.scale(pdfWidth / fontWidth, 1);
             }
         }
     }

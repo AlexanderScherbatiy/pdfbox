@@ -425,4 +425,34 @@ public class PDCIDFontType2 extends PDCIDFont
     {
         return codeToGID(code) != 0;
     }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public java.awt.Font getAwtFont() throws IOException {
+        java.awt.Font awtFont = null;
+        PDFontDescriptor fd = getFontDescriptor();
+        PDStream ff2Stream = fd.getFontFile2();
+        if (ff2Stream != null) {
+            try {
+                // create a font with the embedded data
+                awtFont = java.awt.Font.createFont(java.awt.Font.TRUETYPE_FONT, ff2Stream.createInputStream());
+            } catch (java.awt.FontFormatException f) {
+                LOG.info("Can't read the embedded font " + fd.getFontName());
+            }
+            if (awtFont == null) {
+                if (fd.getFontName() != null) {
+                    awtFont = FontManager.getAwtFont(fd.getFontName());
+                }
+                if (awtFont != null) {
+                    LOG.info("Using font " + awtFont.getName() + " instead");
+                }
+
+                // TBD
+                //setIsFontSubstituted(true);
+            }
+        }
+        return awtFont;
+    }
 }

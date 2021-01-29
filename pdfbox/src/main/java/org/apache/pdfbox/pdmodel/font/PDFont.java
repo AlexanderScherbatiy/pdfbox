@@ -623,4 +623,23 @@ public abstract class PDFont implements COSObjectable, PDFontLike
     {
         return getClass().getSimpleName() + " " + getName();
     }
+
+    /**
+     * Looks up, creates, returns  the AWT Font.
+     *
+     * @return returns the awt font to bes used for rendering
+     * @throws IOException if something went wrong.
+     */
+    public java.awt.Font getAwtFont() throws IOException
+    {
+        String msg = String.format("Not yet implemented: %s", getClass().getName());
+        throw new UnsupportedOperationException(msg);
+    }
+
+    // It is not clear where to get the default font size from
+    // Return a constant font size for the given font as a temporary workaround
+    public float getAwtFontDefaultSize() {
+        String msg = String.format("Not yet implemented: %s", getClass().getName());
+        throw new UnsupportedOperationException(msg);
+    }
 }

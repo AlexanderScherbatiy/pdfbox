@@ -412,4 +412,16 @@ public abstract class PDCIDFont implements COSObjectable, PDFontLike, PDVectorFo
         }
         return cid2gid;
     }
+
+    /**
+     * Looks up, creates, returns  the AWT Font.
+     *
+     * @return returns the awt font to bes used for rendering
+     * @throws IOException if something went wrong.
+     */
+    public java.awt.Font getAwtFont() throws IOException
+    {
+        LOG.error("Not yet implemented:" + getClass().getName() );
+        return null;
+    }
 }
